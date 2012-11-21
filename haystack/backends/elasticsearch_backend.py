@@ -630,8 +630,11 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 field_mapping['analyzer'] = "edgengram_analyzer"
             elif field_class.field_type == 'location':
                 field_mapping['type'] = 'geo_point'
-            elif field_class.field_type == 'html':
+            elif field_class.field_type == 'es_html':
                 field_mapping['analyzer'] = "html_analyzer"
+            elif field_class.field_type == 'es_attachment':
+                field_mapping['type'] = "es_attachment"
+                del field_mapping['index']
 
             # The docs claim nothing is needed for multivalue...
             # if field_class.is_multivalued:
@@ -648,7 +651,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 field_mapping["term_vector"] = "with_positions_offsets"
 
                 if (not hasattr(field_class, 'facet_for') and
-                    not field_class.field_type in('ngram', 'edge_ngram', 'html')):
+                    not field_class.field_type in('ngram', 'edge_ngram', 'es_html', 'es_attachment')):
                     field_mapping["analyzer"] = "snowball"
 
             mapping[field_class.index_fieldname] = field_mapping

@@ -1,4 +1,5 @@
 import re
+import base64
 from django.utils import datetime_safe
 from django.template import loader, Context
 from haystack.exceptions import SearchFieldError
@@ -357,6 +358,45 @@ class MultiValueField(SearchField):
             return None
 
         return list(value)
+
+
+class ESHtmlField(CharField):
+    """
+    This is ElasticSearch specific field with
+       "html_analyzer": {
+            "type": "custom",
+            "tokenizer": "lowercase",
+            "filter": ["standard"],
+            "char_filter": ["html_strip"]
+        }
+    """
+    field_type = "es_html"
+
+
+class ESAttachmentField(SearchField):
+    """
+    This is ElasticSearch specific field for elasticsearch-mapper-attachments plugin
+    http://www.elasticsearch.org/guide/reference/mapping/attachment-type.html
+    https://github.com/elasticsearch/elasticsearch-mapper-attachments
+    bin/plugin -install elasticsearch/elasticsearch-mapper-attachments/1.6.0
+    """
+    field_type = "es_attachment"
+
+    def __init__(self, **kwargs):
+        if kwargs.get('use_template') is True:
+            raise SearchFieldError("'%s' fields can not use templates to prepare their data." % self.__class__.__name__)
+
+        super(ESAttachmentField, self).__init__(**kwargs)
+
+    def prepare(self, obj):
+        return self.convert(super(ESAttachmentField, self).prepare(obj))
+
+    def convert(self, value):
+        if value is None:
+            return None
+
+        t = base64.b64encode(value.encode('utf-8'))
+        return t
 
 
 class FacetField(SearchField):
